@@ -1,10 +1,8 @@
-﻿using BookHomeWorkApi.DAL;
+﻿using BookHomeWorkApi.DTO;
 using BookHomeWorkApi.Models;
+using BookHomeWorkApi.Services.Interface;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
 
 namespace BookHomeWorkApi.Controllers
 {
@@ -12,69 +10,53 @@ namespace BookHomeWorkApi.Controllers
     [Route("api/[controller]/[action]")]
     public class BookController : Controller
     {
-       
-        private readonly AppDbContext _context;
-
-        public BookController(AppDbContext context)
+        private readonly IBookService _bookService;
+        public BookController(IBookService bookService)
         {
-            _context = context;
+            _bookService = bookService;
         }
+        
         [HttpGet]
-        public IActionResult GetBook()
-        {
-            var books = _context.Books.ToList();
-            if (books is null)
-                return NotFound();
-
-            return Ok(books);
+        public IActionResult GetAllBook()
+        {           
+            return Ok(_bookService.GetAllBook());
         }
         [HttpGet]
         [Route ("{id}")]
         public IActionResult GetBookById(int id)
         {
-            var book = _context.Books.FirstOrDefault(b => b.Id == id);
-            if (book is null)
+            var books = _bookService.GetBookById(id);
+
+            if (books is null)
                 return NotFound();
-            return Ok(book);
+
+            return Ok(books);
         }
         [HttpPost]
-        public IActionResult CreateBook([FromBody] Book book)
+        public IActionResult CreateBook([FromBody] BookDTO book)
         {
             if (!ModelState.IsValid)
                 return BadRequest();
-            _context.Books.Add(book);
-            _context.SaveChanges();
-            return Ok(book);
+
+            _bookService.Create(book);
+
+            return Ok();
         }
         [HttpPut]
         [Route("{id}")]
-        public ActionResult BookEdit(int id, [FromBody] Book book)
+        public ActionResult BookEdit(int id, [FromBody] BookDTO book)
         {
-            var bookDb = _context.Books.FirstOrDefault(m => m.Id == id);
+            if (!ModelState.IsValid)
+                return BadRequest();
 
-            if (bookDb is null)
-                return NotFound();
-
-            book.Id = bookDb.Id;
-            book.Name = bookDb.Name;
-            book.NumberofPages = bookDb.NumberofPages;
-            book.Price = bookDb.Price;
-            book.Subject = book.Subject;
-            book.Writers = book.Writers;           
-            _context.Books.Update(bookDb);
-            return Ok(book);
+            return Ok(_bookService.Edit(id, book));
         }
 
         [HttpDelete]
         [Route("{id}")]
         public IActionResult DeleteBook(int id)
         {
-            var bookdb = _context.Books.FirstOrDefault(b => b.Id == id);
-
-            _context.Remove(bookdb);
-            _context.SaveChanges();
-            return Ok();
-
+            return Ok(_bookService.Delete(id));
         }
     }
 }
